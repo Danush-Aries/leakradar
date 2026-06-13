@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeakRadar — Domain Breach Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6M8 11h6" stroke="#ff4757"/></svg>
+      LeakRadar
+    </div>
+    <button class="btn-icon" onclick="toggleSettings()" title="API Keys">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.07 13.83M4.93 4.93a10 10 0 0 0-1.07 13.83M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      API Keys
+    </button>
+  </header>
+
+  <!-- Settings Drawer -->
+  <div class="settings-drawer" id="settings-drawer">
+    <div class="settings-inner">
+      <h3>API Keys <span class="badge-optional">optional — expands coverage</span></h3>
+      <div class="settings-grid">
+        <label>
+          <span>HaveIBeenPwned API Key</span>
+          <small>Unlocks per-account email breach data · <a href="https://haveibeenpwned.com/API/Key" target="_blank">Get key</a></small>
+          <input type="password" id="key-hibp" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+        </label>
+        <label>
+          <span>SerpAPI Key</span>
+          <small>Google dork results (more accurate) · <a href="https://serpapi.com" target="_blank">Get key</a></small>
+          <input type="password" id="key-serp" placeholder="xxxxxxxx..." />
+        </label>
+        <label>
+          <span>GitHub Token</span>
+          <small>Unlocks 6 deep queries (vs 3) · finds .env, config, secrets · <a href="https://github.com/settings/tokens/new?scopes=&description=LeakRadar" target="_blank">Generate token</a></small>
+          <input type="password" id="key-github" placeholder="ghp_..." />
+        </label>
+        <label>
+          <span>GitLab Token</span>
+          <small>Searches GitLab public repos for credential leaks · <a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank">Get token</a></small>
+          <input type="password" id="key-gitlab" placeholder="glpat-..." />
+        </label>
+        <label>
+          <span>BreachDirectory API Key</span>
+          <small>Breach database with email:password records · RapidAPI</small>
+          <input type="password" id="key-bd" placeholder="..." />
+        </label>
+      </div>
+      <div class="settings-actions">
+        <button class="btn-primary" onclick="saveSettings()">Save Keys</button>
+        <button class="btn-ghost" onclick="clearSettings()">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">100% Keyless · HIBP · grep.app · Sourcegraph · Pastes · Dorking</div>
+    <h1>Domain Breach Intelligence</h1>
+    <p>Discover every data leak, credential dump, and exposure event for any domain using ethical OSINT dorking techniques. Find what's out there — then request deletion.</p>
+    <div class="search-wrap">
+      <div class="search-box">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Enter domain — e.g. adobe.com or https://example.com"
+          onkeydown="if(event.key==='Enter') startSearch()"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn-scan" id="scan-btn" onclick="startSearch()">
+          <span id="scan-label">Scan</span>
+          <span id="scan-spinner" class="spinner hidden"></span>
+        </button>
+      </div>
+      <p class="search-hint">No API keys needed — fully keyless · add keys in Settings only for extra coverage</p>
+    </div>
+  </section>
+
+  <!-- Error Banner -->
+  <div class="error-banner hidden" id="error-banner"></div>
+
+  <!-- Results -->
+  <main class="results hidden" id="results">
+
+    <!-- Summary Bar -->
+    <div class="summary-bar" id="summary-bar">
+      <div class="summary-domain" id="summary-domain"></div>
+      <div class="summary-stats" id="summary-stats"></div>
+      <div class="summary-types" id="summary-types"></div>
+    </div>
+
+    <!-- Severity Filter -->
+    <div class="filter-row">
+      <span class="filter-label">Filter:</span>
+      <button class="filter-btn active" data-sev="all" onclick="filterSeverity('all',this)">All</button>
+      <button class="filter-btn" data-sev="critical" onclick="filterSeverity('critical',this)">Critical</button>
+      <button class="filter-btn" data-sev="high" onclick="filterSeverity('high',this)">High</button>
+      <button class="filter-btn" data-sev="medium" onclick="filterSeverity('medium',this)">Medium</button>
+      <button class="filter-btn" data-sev="low" onclick="filterSeverity('low',this)">Low</button>
+      <button class="btn-export" onclick="exportJSON()">Export JSON</button>
+    </div>
+
+    <!-- Finding Cards -->
+    <div class="cards-grid" id="cards-grid"></div>
+
+    <!-- Dork Queries Section -->
+    <div class="dork-section" id="dork-section">
+      <h3>Manual Dork Queries</h3>
+      <p>Run these in Google, Bing, or DuckDuckGo for deeper manual research:</p>
+      <div class="dork-list" id="dork-list"></div>
+    </div>
+
+  </main>
+
+  <!-- Delete Request Modal -->
+  <div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Generate Data Deletion Request</h3>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-tabs">
+          <button class="modal-tab active" onclick="switchTab('gdpr',this)">GDPR (EU)</button>
+          <button class="modal-tab" onclick="switchTab('ccpa',this)">CCPA (California)</button>
+          <button class="modal-tab" onclick="switchTab('general',this)">General</button>
+        </div>
+        <div class="modal-form">
+          <label>Your Email Address
+            <input type="email" id="req-email" placeholder="your@email.com" />
+          </label>
+          <label>Your Full Name
+            <input type="text" id="req-name" placeholder="John Doe" />
+          </label>
+        </div>
+        <div class="template-box">
+          <div class="template-header">
+            <span>Email Template</span>
+            <button class="btn-copy" onclick="copyTemplate()">Copy</button>
+          </div>
+          <pre id="template-content"></pre>
+        </div>
+        <div class="modal-note">
+          Send to the breach site's privacy/security contact. Search for <code>privacy@[site]</code> or <code>security@[site]</code>.
+          GDPR requests must be fulfilled within 30 days.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
