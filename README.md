@@ -2,8 +2,6 @@
 
 **Point it at a domain. It tells you what's leaking.**
 
-<!-- hero: 1600x600 screenshot of the LeakRadar dashboard -->
-
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![HIBP](https://img.shields.io/badge/HIBP-integrated-red)
@@ -31,8 +29,9 @@ python run.py
 Then open http://localhost:8765, enter a domain, optionally paste your HIBP / SerpAPI / GitHub tokens, and hit search.
 
 ```bash
-# Or hit the API directly
+# Or hit the API directly (API keys are optional query params: hibp_key, serp_key, github_token, gitlab_token, bd_key)
 curl "http://localhost:8765/api/search?domain=example.com"
+curl "http://localhost:8765/api/dorks?domain=example.com"   # generated Google dork queries
 ```
 
 ---
@@ -54,19 +53,12 @@ domain
 +---------------------------|------------------------------+
                             v
               consolidated JSON report
-                     (dedup + score)
+                     (severity-sorted + summary)
                             v
               FastAPI /api/search + web UI
 ```
 
 Each source is an isolated module under `backend/sources/` so adding a new leak feed is a single-file change.
-
----
-
-## Screenshots
-
-<!-- screenshot: dashboard.png, showing search bar + results table -->
-<!-- screenshot: dorks.png, showing generated Google dork queries -->
 
 ---
 
@@ -96,4 +88,6 @@ Built by [Dhanush](https://github.com/Danush-Aries) — AI engineering + cyberse
 
 ## License
 
-MIT.
+MIT — see [LICENSE](LICENSE).
+
+Use only against domains you own or are authorised to assess.
